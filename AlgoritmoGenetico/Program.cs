@@ -6,7 +6,8 @@
         static void Main(string[] args)
         {
             Console.WriteLine("Alocação de tarefas");
-            Dictionary<int, int> individuos = new Dictionary<int, int>();
+
+            List<List<Trabalhador>> populacaoFinal = new List<List<Trabalhador>>();
 
             //Cromosso
             var nomesTrabalhadores = new List<string>
@@ -19,13 +20,18 @@
             {
                 //Inicializar população
                 var populacao = InicializarPopulacao(nomesTrabalhadores, tarefas);
+                populacaoFinal.Add(populacao);
+
+                Console.WriteLine($"Indíviduo {i + 1}");
+                foreach (var trabalhador in populacao)
+                {
+                    Console.WriteLine($"Nome: {trabalhador.Nome}, Tarefa: {trabalhador.Tarefa}, Nota: {trabalhador.Nota}");
+                }
 
                 //Avaliar população
                 var resultadoAvaliacao = AvaliarPopulacao(populacao);
 
                 Console.WriteLine($"Resultado da avaliação do indivíduo {i + 1}: {resultadoAvaliacao}");
-
-                individuos.Add(i, resultadoAvaliacao);
 
             }
         }
