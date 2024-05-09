@@ -1,49 +1,36 @@
 ﻿using System;
-using System.Collections;
-using System.Collections.Generic;
 
 namespace AlgoritmoGenetico
 {
     internal class Program
     {
-        static Random random = new Random();
-        static void Main(string[] args)
+        private static readonly Random Random = new Random();
+
+        private static void Main(string[] args)
         {
             Console.ForegroundColor = ConsoleColor.Cyan;
             Console.WriteLine("Alocação de tarefas");
             Console.ResetColor();
             Console.WriteLine();
 
-            List<List<Trabalhador>> populacao = new List<List<Trabalhador>>();
-            var avaliacao = new List<int>();
-
-            //Cromosso
             var nomesTrabalhadores = new List<string>
             {
                 "Steve", "Robert", "Susan", "Greg", "Austin", "Joe", "Frank", "Abu", "Kelly", "Michael"
             };
+
             var tarefas = AtribuirTarefas();
 
-            for (int i = 0; i < 10; i++)
+            var populacao = new List<List<Trabalhador>>();
+            var avaliacao = new List<int>();
+
+            for (var i = 0; i < 10; i++)
             {
-                //Inicializar população
                 var individuo = InicializarPopulacao(nomesTrabalhadores, tarefas);
                 populacao.Add(individuo);
 
-                // Exibir os indivíduos em uma tabela
-                Console.WriteLine($"Indíviduo {i + 1}");
-                Console.ForegroundColor = ConsoleColor.Cyan;
-                Console.WriteLine("Nome\t\tTarefa\tNota");
-                Console.ResetColor();
+                ExibirIndividuo(i + 1, individuo);
 
-                foreach (var t in individuo)
-                {
-                    Console.WriteLine($"{t.Nome}\t\t{t.Tarefa}\t{t.Nota}");
-                }
-
-                //Avaliar população
                 var resultadoAvaliacao = AvaliarPopulacao(individuo);
-
                 Console.WriteLine($"Resultado da avaliação do indivíduo {i + 1}: {resultadoAvaliacao}");
                 Console.WriteLine("-----------------------------");
 
@@ -51,149 +38,159 @@ namespace AlgoritmoGenetico
             }
 
             Console.ForegroundColor = ConsoleColor.Yellow;
-            Console.WriteLine($"Iniciando reprodução...");
-            Console.ResetColor();
+            Console.WriteLine($"\nIniciando reprodução...");
 
             Console.WriteLine($"Selecionando pais...");
-
-            var paiIndex = random.Next(populacao.Count);
-            var maeIndex = random.Next(populacao.Count);
-
-            //Certificar que pai e mãe sejam diferentes
-            while (maeIndex == paiIndex)
-            {
-                maeIndex = random.Next(populacao.Count);
-            }
+            var (paiIndex, maeIndex) = SelecionarPais(populacao.Count);
 
             Console.WriteLine($"Pais selecionados: ID Pai: {paiIndex + 1}, ID Mae: {maeIndex + 1} ");
-
-            #region Elitismo
-            var pai = populacao[paiIndex];
-            var mae = populacao[maeIndex];
-
-            var metadePaiUm = pai.GetRange(0, 5);
-            var metadeMaeUm = mae.GetRange(5, 5);
-
-            var cruzamentoUm = new List<Trabalhador>();
-            cruzamentoUm.AddRange(metadePaiUm);
-            cruzamentoUm.AddRange(metadeMaeUm);
-
-            var individuoUm = cruzamentoUm;
-
-            Console.ForegroundColor = ConsoleColor.Cyan;
-            Console.WriteLine("Nome\t\tTarefa\tNota");
             Console.ResetColor();
-            foreach (var t in individuoUm)
-            {
-                Console.WriteLine($"{t.Nome}\t\t{t.Tarefa}\t{t.Nota}");
-            }
 
-            var cruzamentoDois = new List<Trabalhador>();
-            cruzamentoDois.AddRange(metadeMaeUm);
-            cruzamentoDois.AddRange(metadePaiUm);
-            var individuoDois = cruzamentoDois;
+            var (cruzamentoUm, cruzamentoDois) = AplicarCruzamento(populacao[paiIndex], populacao[maeIndex]);
+            ExibirIndividuo(1, cruzamentoUm);
+            ExibirIndividuo(2, cruzamentoDois);
 
-            Console.ForegroundColor = ConsoleColor.Cyan;
-            Console.WriteLine("Nome\t\tTarefa\tNota");
-            Console.ResetColor();
-            foreach (var t in individuoDois)
-            {
-                Console.WriteLine($"{t.Nome}\t\t{t.Tarefa}\t{t.Nota}");
-            }
-
-            #endregion
-
-
-            #region Seleção melhor índivuduo
             Console.ForegroundColor = ConsoleColor.Yellow;
             Console.WriteLine("\nSelecionando o melhor indivíduo...");
 
             var melhorIndividuo = SelecionarMelhorIndividuo(avaliacao, populacao);
 
-            Console.ForegroundColor = ConsoleColor.Yellow;
             Console.WriteLine($"Indivíduo selecionado: {populacao.IndexOf(melhorIndividuo) + 1}");
             Console.ResetColor();
-            #endregion
 
+            var geracao = new List<List<Trabalhador>>
+            {
+                cruzamentoUm.Select(t => t.Clone()).ToList(),
+                cruzamentoDois.Select(t => t.Clone()).ToList(),
+                melhorIndividuo.Select(t => t.Clone()).ToList(),
+                melhorIndividuo.Select(t => t.Clone()).ToList()
+            };
 
             Console.ForegroundColor = ConsoleColor.Magenta;
             Console.WriteLine($"\n\tGeração 01");
             Console.ResetColor();
-            List<List<Trabalhador>> primeiraGeracao = new List<List<Trabalhador>>();
-            primeiraGeracao.Add(cruzamentoUm.Select(t => t.Clone()).ToList());
-            primeiraGeracao.Add(cruzamentoDois.Select(t => t.Clone()).ToList());
-            primeiraGeracao.Add(melhorIndividuo.Select(t => t.Clone()).ToList());
-            primeiraGeracao.Add(melhorIndividuo.Select(t => t.Clone()).ToList());
+            ExibirGeracao(geracao);
 
-            foreach (var lista in primeiraGeracao)
-            {
-                Console.ForegroundColor = ConsoleColor.Cyan;
-                Console.WriteLine("Nome\t\tTarefa\tNota");
-                Console.ResetColor();
-                foreach (var t in lista)
-                {
-                    Console.WriteLine($"{t.Nome}\t\t{t.Tarefa}\t{t.Nota}");
+            //TO DO: MUTAÇÃO
 
-                }
-            }
+            Console.ForegroundColor = ConsoleColor.Yellow;
+            Console.WriteLine($"\nRealizando Mutação");
+            Console.ResetColor();
 
-            //MUTAÇÃO
-            var selecaoAleatoria = random.Next(0, 4);         
-            var individuoSelecionado = primeiraGeracao[selecaoAleatoria];
-            var tabalhadorIndex = random.Next(0, 10);
-
-            var trab = individuoSelecionado[tabalhadorIndex];
-            var notaAnterior = trab.Nota;
-
-            Console.WriteLine($"SELECIONADO INDIVIDUO: {selecaoAleatoria}");
-            Console.WriteLine($"TRABALHADOR: {trab.Nome} {trab.Tarefa} {trab.Nota}");
-
-            trab.Nota = random.Next(1, 11);
-
-            while(notaAnterior == trab.Nota)
-                trab.Nota = random.Next(1, 11);
-
-            Console.WriteLine($"NOTA APÓS MUTAÇÃO: {trab.Nota}");
-
-
-            Console.WriteLine($"_____MUTACAO________________");
-
-            foreach (var lista in primeiraGeracao)
-            {
-                Console.ForegroundColor = ConsoleColor.Cyan;
-                Console.WriteLine("Nome\t\tTarefa\tNota");
-                Console.ResetColor();
-
-                foreach (var t in lista)
-                {
-                    Console.WriteLine($"{t.Nome}\t\t{t.Tarefa}\t{t.Nota}");
-                }
-            }
+            AplicarMutacao(geracao);
 
             Console.ReadLine();
         }
-        static List<Trabalhador> InicializarPopulacao(List<string> nomesTrabalhadores, List<int> tarefas)
+
+        private static void AplicarMutacao(List<List<Trabalhador>> geracao)
+        {
+            var selecaoAleatoria = Random.Next(0, 4);
+            var individuoSelecionado = geracao[selecaoAleatoria];
+            var trabalhadorIndex = Random.Next(0, 10);
+
+            var trabalhador = individuoSelecionado[trabalhadorIndex];
+            var notaAnterior = trabalhador.Nota;
+
+            Console.WriteLine($"Indivíduo selecionado para mutação: {selecaoAleatoria + 1}");
+            Console.WriteLine($"Trabalhador selecionado: {trabalhador.Nome} - Nota anterior: {notaAnterior}");
+
+            do
+            {
+                trabalhador.Nota = Random.Next(1, 11);
+            } while (notaAnterior == trabalhador.Nota);
+
+            Console.WriteLine($"Nota após mutação: {trabalhador.Nota}");
+
+            Console.ForegroundColor = ConsoleColor.Yellow;
+            Console.WriteLine($"\nMutação:");
+            Console.ResetColor();
+
+            ExibirGeracao(geracao);
+        }
+
+        private static List<Trabalhador> InicializarPopulacao(List<string> nomesTrabalhadores, List<int> tarefas)
         {
             var trabalhadores = new List<Trabalhador>();
-            for (int i = 0; i <= 9; i++)
+            for (var i = 0; i < 10; i++)
             {
-                int notaAleatoria = random.Next(1, 11);
-
-                var trab = new Trabalhador();
-                trab.Nome = nomesTrabalhadores[i];
-                trab.Tarefa = tarefas[i];
-                trab.Nota = notaAleatoria;
-
+                var notaAleatoria = Random.Next(1, 11);
+                var trab = new Trabalhador
+                {
+                    Nome = nomesTrabalhadores[i],
+                    Tarefa = tarefas[i],
+                    Nota = notaAleatoria
+                };
                 trabalhadores.Add(trab);
             }
-
             return trabalhadores;
         }
-        static int AvaliarPopulacao(List<Trabalhador> trabalhadores)
+
+        private static int AvaliarPopulacao(List<Trabalhador> trabalhadores)
         {
             return trabalhadores.Sum(trabalhador => trabalhador.Nota);
         }
-        static List<int> AtribuirTarefas()
+
+        private static (int, int) SelecionarPais(int populacaoCount)
+        {
+            var paiIndex = Random.Next(populacaoCount);
+            var maeIndex = Random.Next(populacaoCount);
+            while (maeIndex == paiIndex)
+            {
+                maeIndex = Random.Next(populacaoCount);
+            }
+            return (paiIndex, maeIndex);
+        }
+
+        private static (List<Trabalhador>, List<Trabalhador>) AplicarCruzamento(List<Trabalhador> pai, List<Trabalhador> mae)
+        {
+            var metadePaiUm = pai.GetRange(0, 5);
+            var metadeMaeUm = mae.GetRange(5, 5);
+
+            var cruzamentoUm = metadePaiUm.Concat(metadeMaeUm).ToList();
+            var cruzamentoDois = metadeMaeUm.Concat(metadePaiUm).ToList();
+
+            return (cruzamentoUm, cruzamentoDois);
+        }
+
+        private static List<Trabalhador> SelecionarMelhorIndividuo(List<int> avaliacao, List<List<Trabalhador>> populacao)
+        {
+            var indiceMaiorValor = avaliacao.IndexOf(avaliacao.Max());
+            return populacao[indiceMaiorValor];
+        }
+
+        private static void ExibirIndividuo(int index, List<Trabalhador> individuo)
+        {
+            Console.WriteLine($"Indíviduo {index}");
+            Console.ForegroundColor = ConsoleColor.Cyan;
+            Console.WriteLine("Nome\t\tTarefa\tNota");
+            Console.ResetColor();
+            foreach (var t in individuo)
+            {
+                Console.WriteLine($"{t.Nome}\t\t{t.Tarefa}\t{t.Nota}");
+            }
+        }
+
+        private static void ExibirGeracao(List<List<Trabalhador>> geracao)
+        {
+            foreach (var lista in geracao)
+            {
+                ExibirIndividuoLista(lista);
+                Console.WriteLine("Resultado avaliação: {0}", AvaliarPopulacao(lista));
+            }
+        }
+
+        private static void ExibirIndividuoLista(List<Trabalhador> lista)
+        {
+            Console.ForegroundColor = ConsoleColor.Cyan;
+            Console.WriteLine("Nome\t\tTarefa\tNota");
+            Console.ResetColor();
+            foreach (var t in lista)
+            {
+                Console.WriteLine($"{t.Nome}\t\t{t.Tarefa}\t{t.Nota}");
+            }
+        }
+
+        private static List<int> AtribuirTarefas()
         {
             Random rand = new Random();
 
@@ -214,15 +211,8 @@ namespace AlgoritmoGenetico
 
             return tarefas;
         }
-
-        static List<Trabalhador> SelecionarMelhorIndividuo(List<int> avaliacao, List<List<Trabalhador>> populacao)
-        {
-            int maiorValor = avaliacao.Max();
-            int indiceMaiorValor = avaliacao.IndexOf(maiorValor);
-            var melhor = populacao[indiceMaiorValor];
-
-            return melhor;
-        }
-
     }
 }
+
+
+
