@@ -1,4 +1,8 @@
-﻿namespace AlgoritmoGenetico
+﻿using System;
+using System.Collections;
+using System.Collections.Generic;
+
+namespace AlgoritmoGenetico
 {
     internal class Program
     {
@@ -11,6 +15,7 @@
             Console.WriteLine();
 
             List<List<Trabalhador>> populacao = new List<List<Trabalhador>>();
+            var avaliacao = new List<int>();
 
             //Cromosso
             var nomesTrabalhadores = new List<string>
@@ -42,50 +47,130 @@
                 Console.WriteLine($"Resultado da avaliação do indivíduo {i + 1}: {resultadoAvaliacao}");
                 Console.WriteLine("-----------------------------");
 
-
+                avaliacao.Add(resultadoAvaliacao);
             }
 
             Console.ForegroundColor = ConsoleColor.Yellow;
             Console.WriteLine($"Iniciando reprodução...");
             Console.ResetColor();
 
-            for (int i = 0; i < 4; i++)
+            Console.WriteLine($"Selecionando pais...");
+
+            var paiIndex = random.Next(populacao.Count);
+            var maeIndex = random.Next(populacao.Count);
+
+            //Certificar que pai e mãe sejam diferentes
+            while (maeIndex == paiIndex)
             {
-                Console.WriteLine($"[ {i + 1} ] Selecionando pais...");
+                maeIndex = random.Next(populacao.Count);
+            }
 
-                var paiIndex = random.Next(populacao.Count);
-                var maeIndex = random.Next(populacao.Count);
+            Console.WriteLine($"Pais selecionados: ID Pai: {paiIndex + 1}, ID Mae: {maeIndex + 1} ");
 
-                //Certificar que pai e mãe sejam diferentes
-                while (maeIndex == paiIndex)
+            #region Elitismo
+            var pai = populacao[paiIndex];
+            var mae = populacao[maeIndex];
+
+            var metadePaiUm = pai.GetRange(0, 5);
+            var metadeMaeUm = mae.GetRange(5, 5);
+
+            var cruzamentoUm = new List<Trabalhador>();
+            cruzamentoUm.AddRange(metadePaiUm);
+            cruzamentoUm.AddRange(metadeMaeUm);
+
+            var individuoUm = cruzamentoUm;
+
+            Console.ForegroundColor = ConsoleColor.Cyan;
+            Console.WriteLine("Nome\t\tTarefa\tNota");
+            Console.ResetColor();
+            foreach (var t in individuoUm)
+            {
+                Console.WriteLine($"{t.Nome}\t\t{t.Tarefa}\t{t.Nota}");
+            }
+
+            var cruzamentoDois = new List<Trabalhador>();
+            cruzamentoDois.AddRange(metadeMaeUm);
+            cruzamentoDois.AddRange(metadePaiUm);
+            var individuoDois = cruzamentoDois;
+
+            Console.ForegroundColor = ConsoleColor.Cyan;
+            Console.WriteLine("Nome\t\tTarefa\tNota");
+            Console.ResetColor();
+            foreach (var t in individuoDois)
+            {
+                Console.WriteLine($"{t.Nome}\t\t{t.Tarefa}\t{t.Nota}");
+            }
+
+            #endregion
+
+
+            #region Seleção melhor índivuduo
+            Console.ForegroundColor = ConsoleColor.Yellow;
+            Console.WriteLine("\nSelecionando o melhor indivíduo...");
+
+            var melhorIndividuo = SelecionarMelhorIndividuo(avaliacao, populacao);
+
+            Console.ForegroundColor = ConsoleColor.Yellow;
+            Console.WriteLine($"Indivíduo selecionado: {populacao.IndexOf(melhorIndividuo) + 1}");
+            Console.ResetColor();
+            #endregion
+
+
+            Console.ForegroundColor = ConsoleColor.Magenta;
+            Console.WriteLine($"\n\tGeração 01");
+            Console.ResetColor();
+            List<List<Trabalhador>> primeiraGeracao = new List<List<Trabalhador>>();
+            primeiraGeracao.Add(cruzamentoUm.Select(t => t.Clone()).ToList());
+            primeiraGeracao.Add(cruzamentoDois.Select(t => t.Clone()).ToList());
+            primeiraGeracao.Add(melhorIndividuo.Select(t => t.Clone()).ToList());
+            primeiraGeracao.Add(melhorIndividuo.Select(t => t.Clone()).ToList());
+
+            foreach (var lista in primeiraGeracao)
+            {
+                Console.ForegroundColor = ConsoleColor.Cyan;
+                Console.WriteLine("Nome\t\tTarefa\tNota");
+                Console.ResetColor();
+                foreach (var t in lista)
                 {
-                    maeIndex = random.Next(populacao.Count);
+                    Console.WriteLine($"{t.Nome}\t\t{t.Tarefa}\t{t.Nota}");
+
                 }
+            }
 
-                Console.WriteLine($"[ {i + 1} ] Pais selecionados: ID Pai: {paiIndex + 1}, ID Mae: {maeIndex + 1} ");
-                var pai = populacao[paiIndex];
-                var mae = populacao[maeIndex];
+            //MUTAÇÃO
+            var selecaoAleatoria = random.Next(0, 4);         
+            var individuoSelecionado = primeiraGeracao[selecaoAleatoria];
+            var tabalhadorIndex = random.Next(0, 10);
+
+            var trab = individuoSelecionado[tabalhadorIndex];
+            var notaAnterior = trab.Nota;
+
+            Console.WriteLine($"SELECIONADO INDIVIDUO: {selecaoAleatoria}");
+            Console.WriteLine($"TRABALHADOR: {trab.Nome} {trab.Tarefa} {trab.Nota}");
+
+            trab.Nota = random.Next(1, 11);
+
+            while(notaAnterior == trab.Nota)
+                trab.Nota = random.Next(1, 11);
+
+            Console.WriteLine($"NOTA APÓS MUTAÇÃO: {trab.Nota}");
 
 
-                // Realize o cruzamento
-                var metadePai = pai.GetRange(0, 5);
-                var metadeMae = mae.GetRange(5, 5);
+            Console.WriteLine($"_____MUTACAO________________");
 
-                List<Trabalhador> cruzamento = new List<Trabalhador>();
-                cruzamento.AddRange(metadePai);
-                cruzamento.AddRange(metadeMae);
-
-                // Exibir os indivíduos em uma tabela
-                Console.WriteLine($"[ {i + 1} ] Cruzamento realizado: ");
-                Console.ForegroundColor = ConsoleColor.Yellow;
+            foreach (var lista in primeiraGeracao)
+            {
+                Console.ForegroundColor = ConsoleColor.Cyan;
                 Console.WriteLine("Nome\t\tTarefa\tNota");
                 Console.ResetColor();
 
-                foreach (var t in cruzamento)
+                foreach (var t in lista)
                 {
                     Console.WriteLine($"{t.Nome}\t\t{t.Tarefa}\t{t.Nota}");
                 }
             }
+
+            Console.ReadLine();
         }
         static List<Trabalhador> InicializarPopulacao(List<string> nomesTrabalhadores, List<int> tarefas)
         {
@@ -129,5 +214,15 @@
 
             return tarefas;
         }
+
+        static List<Trabalhador> SelecionarMelhorIndividuo(List<int> avaliacao, List<List<Trabalhador>> populacao)
+        {
+            int maiorValor = avaliacao.Max();
+            int indiceMaiorValor = avaliacao.IndexOf(maiorValor);
+            var melhor = populacao[indiceMaiorValor];
+
+            return melhor;
+        }
+
     }
 }
